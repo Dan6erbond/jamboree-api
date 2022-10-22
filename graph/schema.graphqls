@@ -1,0 +1,84 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Party {
+  name: String!
+  adminCode: String!
+  settings: PartySettings!
+  dates: [PartyDate!]!
+  locations: [PartyLocation!]!
+  supplies: [Supply!]!
+  songPlaylists: [SongPlaylist!]!
+}
+
+type PartySettings {
+  dates: DatePartySettings!
+  locations: LocationPartySettings!
+}
+
+type DatePartySettings {
+  votingEnabled: Boolean!
+  optionsEnabled: Boolean!
+}
+
+type LocationPartySettings {
+  votingEnabled: Boolean!
+  optionsEnabled: Boolean!
+}
+
+type PartyDate {
+  id: Int!
+  date: String!
+  votes: [PartyDateVote!]!
+}
+
+type PartyDateVote {
+  id: Int!
+  username: String!
+}
+
+type PartyLocation {
+  id: Int!
+  location: String!
+  votes: [PartyLocationVote!]!
+}
+
+type PartyLocationVote {
+  id: Int!
+  username: String!
+}
+
+type Supply {
+  id: Int!
+  name: String!
+  quantity: Int!
+  assignee: String
+  isUrgent: Boolean!
+  emoji: String!
+}
+
+type SongPlaylist {
+  id: Int!
+  link: String!
+  votes: [SongPlaylistVote!]!
+}
+
+type SongPlaylistVote {
+  id: Int!
+  username: String!
+}
+
+type Query {
+  party(name: String, adminCode: String): Party
+}
+
+type CreatePartyResult {
+  name: String!
+  adminCode: String!
+}
+
+type Mutation {
+  createParty(username: String!): CreatePartyResult!
+  addLocation(partyName: String!, location: String!): PartyLocation!
+}
