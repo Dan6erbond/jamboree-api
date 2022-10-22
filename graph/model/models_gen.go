@@ -12,6 +12,14 @@ type DatePartySettings struct {
 	OptionsEnabled bool `json:"optionsEnabled"`
 }
 
+type EditPartyRequest struct {
+	PartyName              string `json:"partyName"`
+	DateOptionsEnabled     *bool  `json:"dateOptionsEnabled"`
+	DateVotingEnabled      *bool  `json:"dateVotingEnabled"`
+	LocationOptionsEnabled *bool  `json:"locationOptionsEnabled"`
+	LocationVotingEnabled  *bool  `json:"locationVotingEnabled"`
+}
+
 type LocationPartySettings struct {
 	VotingEnabled  bool `json:"votingEnabled"`
 	OptionsEnabled bool `json:"optionsEnabled"`

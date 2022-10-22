@@ -5,11 +5,15 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/dan6erbond/jamboree-api/graph/generated"
 	graphqlModel "github.com/dan6erbond/jamboree-api/graph/model"
 	randomstring "github.com/dan6erbond/jamboree-api/internal/random_string"
 	uniquename "github.com/dan6erbond/jamboree-api/internal/unique_name"
+	"github.com/dan6erbond/jamboree-api/pkg/auth"
 	"github.com/dan6erbond/jamboree-api/pkg/models"
 )
 
@@ -40,9 +44,87 @@ func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*g
 	}, nil
 }
 
+// EditParty is the resolver for the editParty field.
+func (r *mutationResolver) EditParty(ctx context.Context, partyOptions graphqlModel.EditPartyRequest) (*models.Party, error) {
+	var party models.Party
+	tx := r.db.First(&party).Where("name = ?", partyOptions.PartyName)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if *auth.ForContext(ctx) == party.AdminCode {
+		return nil, fmt.Errorf("cannot edit party without an admin code")
+	}
+	partyUpdate := models.Party{}
+	if partyOptions.DateOptionsEnabled != nil {
+		partyUpdate.DateOptionsEnabled = *partyOptions.DateOptionsEnabled
+	}
+	if partyOptions.DateVotingEnabled != nil {
+		partyUpdate.DateVotingEnabled = *partyOptions.DateVotingEnabled
+	}
+	if partyOptions.LocationOptionsEnabled != nil {
+		partyUpdate.LocationOptionsEnabled = *partyOptions.LocationOptionsEnabled
+	}
+	if partyOptions.LocationVotingEnabled != nil {
+		partyUpdate.LocationVotingEnabled = *partyOptions.LocationVotingEnabled
+	}
+	tx = r.db.Model(&party).Updates(partyUpdate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &party, nil
+}
+
 // AddLocation is the resolver for the addLocation field.
 func (r *mutationResolver) AddLocation(ctx context.Context, partyName string, location string) (*models.PartyLocation, error) {
-	r.db.Create(&models.PartyLocation{})
+	var party models.Party
+	tx := r.db.First(&party).Where("name = ?", partyName)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if !party.LocationVotingEnabled {
+		return nil, fmt.Errorf("cannot add locations to this party, please ask an admin to enable this")
+	}
+	if !party.LocationOptionsEnabled && *auth.ForContext(ctx) != party.AdminCode {
+		return nil, fmt.Errorf("user location options not enabled for this party, please ask an admin to enable this")
+	}
+	partyLocation := models.PartyLocation{
+		Location:  location,
+		PartyName: partyName,
+	}
+	tx = r.db.Create(&partyLocation)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &partyLocation, nil
+}
+
+// AddDate is the resolver for the addDate field.
+func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date string) (*models.PartyDate, error) {
+	var party models.Party
+	tx := r.db.First(&party).Where("name = ?", partyName)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if !party.DateVotingEnabled {
+		return nil, fmt.Errorf("cannot add dates to this party, please ask an admin to enable this")
+	}
+	if !party.DateOptionsEnabled && *auth.ForContext(ctx) != party.AdminCode {
+		return nil, fmt.Errorf("user date options not enabled for this party, please ask an admin to enable this")
+	}
+	i, err := strconv.ParseInt(date, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	tm := time.Unix(i, 0)
+	partyDate := models.PartyDate{
+		Date:      &tm,
+		PartyName: partyName,
+	}
+	tx = r.db.Create(&partyDate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &partyDate, nil
 }
 
 // Settings is the resolver for the settings field.
@@ -57,6 +139,26 @@ func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graph
 			OptionsEnabled: obj.LocationOptionsEnabled,
 		},
 	}, nil
+}
+
+// Dates is the resolver for the dates field.
+func (r *partyResolver) Dates(ctx context.Context, obj *models.Party) ([]*models.PartyDate, error) {
+	var dates []*models.PartyDate
+	tx := r.db.Find(&dates).Where("party_name = ?", obj.Name)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return dates, nil
+}
+
+// Locations is the resolver for the locations field.
+func (r *partyResolver) Locations(ctx context.Context, obj *models.Party) ([]*models.PartyLocation, error) {
+	var locations []*models.PartyLocation
+	tx := r.db.Find(&locations).Where("party_name = ?", obj.Name)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return locations, nil
 }
 
 // ID is the resolver for the id field.

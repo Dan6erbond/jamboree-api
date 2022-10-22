@@ -3,6 +3,7 @@ package graphql
 import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/dan6erbond/jamboree-api/graph/generated"
+	"github.com/dan6erbond/jamboree-api/pkg/auth"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 
@@ -12,6 +13,8 @@ import (
 
 func RegisterRoutes(router *mux.Router, resolver *graph.Resolver, logger *zap.Logger) {
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+
+	router.Use(auth.Middleware())
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)

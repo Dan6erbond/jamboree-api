@@ -78,7 +78,17 @@ type CreatePartyResult {
   adminCode: String!
 }
 
+input EditPartyRequest {
+  partyName: String!
+  dateOptionsEnabled: Boolean
+  dateVotingEnabled: Boolean
+  locationOptionsEnabled: Boolean
+  locationVotingEnabled: Boolean
+}
+
 type Mutation {
   createParty(username: String!): CreatePartyResult!
+  editParty(partyOptions: EditPartyRequest!): Party!
   addLocation(partyName: String!, location: String!): PartyLocation!
+  addDate(partyName: String!, date: String!): PartyDate!
 }

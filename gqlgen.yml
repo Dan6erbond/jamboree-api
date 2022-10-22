@@ -64,6 +64,11 @@ models:
   Party:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.Party
+    fields:
+      dates:
+        resolver: true
+      locations:
+        resolver: true
   PartyDate:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyDate
