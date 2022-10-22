@@ -2,6 +2,15 @@
 
 package model
 
+type AddSupplyPayload struct {
+	PartyName string  `json:"partyName"`
+	Name      string  `json:"name"`
+	Quantity  *int    `json:"quantity"`
+	Assignee  *string `json:"assignee"`
+	IsUrgent  bool    `json:"isUrgent"`
+	Emoji     string  `json:"emoji"`
+}
+
 type CreatePartyResult struct {
 	Name      string `json:"name"`
 	AdminCode string `json:"adminCode"`
@@ -12,12 +21,24 @@ type DatePartySettings struct {
 	OptionsEnabled bool `json:"optionsEnabled"`
 }
 
+type DeleteSupplyResult struct {
+	Success bool `json:"success"`
+}
+
 type EditPartyRequest struct {
 	PartyName              string `json:"partyName"`
 	DateOptionsEnabled     *bool  `json:"dateOptionsEnabled"`
 	DateVotingEnabled      *bool  `json:"dateVotingEnabled"`
 	LocationOptionsEnabled *bool  `json:"locationOptionsEnabled"`
 	LocationVotingEnabled  *bool  `json:"locationVotingEnabled"`
+}
+
+type EditSupplyPayload struct {
+	ID       int     `json:"id"`
+	Name     *string `json:"name"`
+	Quantity *int    `json:"quantity"`
+	IsUrgent *bool   `json:"isUrgent"`
+	Emoji    *string `json:"emoji"`
 }
 
 type LocationPartySettings struct {

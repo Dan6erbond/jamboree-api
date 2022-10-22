@@ -4,7 +4,6 @@
 
 type Party {
   name: String!
-  adminCode: String!
   settings: PartySettings!
   dates: [PartyDate!]!
   locations: [PartyLocation!]!
@@ -86,9 +85,36 @@ input EditPartyRequest {
   locationVotingEnabled: Boolean
 }
 
+input AddSupplyPayload {
+  partyName: String!
+  name: String!
+  quantity: Int
+  assignee: String
+  isUrgent: Boolean!
+  emoji: String!
+}
+
+input EditSupplyPayload {
+  id: Int!
+  name: String
+  quantity: Int
+  isUrgent: Boolean
+  emoji: String
+}
+
+type DeleteSupplyResult {
+  success: Boolean!
+}
+
 type Mutation {
   createParty(username: String!): CreatePartyResult!
   editParty(partyOptions: EditPartyRequest!): Party!
   addLocation(partyName: String!, location: String!): PartyLocation!
   addDate(partyName: String!, date: String!): PartyDate!
+  addSupply(payload: AddSupplyPayload!): Supply!
+  editSupply(payload: EditSupplyPayload!): Supply!
+  assignSupply(supplyId: Int!, username: String!): Supply!
+  deleteSupply(supplyId: Int!): DeleteSupplyResult!
+  toggleDateVote(partyDateId: Int!, username: String!): PartyDateVote
+  toggleLocationVote(partyLocationId: Int!, username: String!): PartyLocationVote
 }

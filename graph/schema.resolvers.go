@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -15,6 +16,7 @@ import (
 	uniquename "github.com/dan6erbond/jamboree-api/internal/unique_name"
 	"github.com/dan6erbond/jamboree-api/pkg/auth"
 	"github.com/dan6erbond/jamboree-api/pkg/models"
+	"gorm.io/gorm"
 )
 
 // CreateParty is the resolver for the createParty field.
@@ -127,6 +129,146 @@ func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date s
 	return &partyDate, nil
 }
 
+// AddSupply is the resolver for the addSupply field.
+func (r *mutationResolver) AddSupply(ctx context.Context, payload graphqlModel.AddSupplyPayload) (*models.Supply, error) {
+	var party models.Party
+	tx := r.db.First(&party).Where("name = ?", payload.PartyName)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	supply := models.Supply{
+		Name:      payload.Name,
+		IsUrgent:  payload.IsUrgent,
+		Emoji:     payload.Emoji,
+		PartyName: party.Name,
+	}
+	if payload.Assignee != nil {
+		supply.Assignee = *payload.Assignee
+	}
+	if payload.Quantity != nil {
+		supply.Quantity = int32(*payload.Quantity)
+	} else {
+		supply.Quantity = 1
+	}
+	tx = r.db.Create(&supply)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &supply, nil
+}
+
+// EditSupply is the resolver for the editSupply field.
+func (r *mutationResolver) EditSupply(ctx context.Context, payload graphqlModel.EditSupplyPayload) (*models.Supply, error) {
+	var supply models.Supply
+	tx := r.db.First(&supply).Where("id = ?", payload.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	supplyUpdate := models.Supply{}
+	if payload.Emoji != nil {
+		supplyUpdate.Emoji = *payload.Emoji
+	}
+	if payload.IsUrgent != nil {
+		supplyUpdate.IsUrgent = *payload.IsUrgent
+	}
+	if payload.Name != nil {
+		supplyUpdate.Name = *payload.Name
+	}
+	if payload.Quantity != nil {
+		if *payload.Quantity <= 0 {
+			return nil, fmt.Errorf("supplyUpdate quantity cannot be below zero")
+		}
+		supplyUpdate.Quantity = int32(*payload.Quantity)
+	}
+	tx = r.db.Model(&supply).Updates(supplyUpdate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &supply, nil
+}
+
+// AssignSupply is the resolver for the assignSupply field.
+func (r *mutationResolver) AssignSupply(ctx context.Context, supplyID int, username string) (*models.Supply, error) {
+	var supply models.Supply
+	tx := r.db.First(&supply).Where("id = ?", supplyID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	supplyUpdate := models.Supply{}
+	supplyUpdate.Assignee = username
+	tx = r.db.Model(&supply).Updates(supplyUpdate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &supply, nil
+}
+
+// DeleteSupply is the resolver for the deleteSupply field.
+func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*graphqlModel.DeleteSupplyResult, error) {
+	var supply models.Supply
+	tx := r.db.First(&supply).Where("id = ?", supplyID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tx = r.db.Where("id = ?", supplyID).Delete(&supply)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &graphqlModel.DeleteSupplyResult{
+		Success: true,
+	}, nil
+}
+
+// ToggleDateVote is the resolver for the toggleDateVote field.
+func (r *mutationResolver) ToggleDateVote(ctx context.Context, partyDateID int, username string) (*models.PartyDateVote, error) {
+	var partyDateVote models.PartyDateVote
+	tx := r.db.First(&partyDateVote).Where("username = ?", username)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			partyDateVote = models.PartyDateVote{
+				PartyDateID: partyDateID,
+				Username:    username,
+			}
+			tx = r.db.Create(&partyDateVote)
+			if tx.Error != nil {
+				return nil, tx.Error
+			}
+			return &partyDateVote, nil
+		}
+		return nil, tx.Error
+	}
+	tx = r.db.Delete(&partyDateVote)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return nil, nil
+}
+
+// ToggleLocationVote is the resolver for the toggleLocationVote field.
+func (r *mutationResolver) ToggleLocationVote(ctx context.Context, partyLocationID int, username string) (*models.PartyLocationVote, error) {
+	var partyLocationVote models.PartyLocationVote
+	tx := r.db.First(&partyLocationVote).Where("username = ?", username)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			partyLocationVote = models.PartyLocationVote{
+				PartyLocationID: partyLocationID,
+				Username:        username,
+			}
+			tx = r.db.Create(&partyLocationVote)
+			if tx.Error != nil {
+				return nil, tx.Error
+			}
+			return &partyLocationVote, nil
+		}
+		return nil, tx.Error
+	}
+	tx = r.db.Delete(&partyLocationVote)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return nil, nil
+}
+
 // Settings is the resolver for the settings field.
 func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graphqlModel.PartySettings, error) {
 	return &graphqlModel.PartySettings{
@@ -171,6 +313,11 @@ func (r *partyDateResolver) Date(ctx context.Context, obj *models.PartyDate) (st
 	return obj.Date.String(), nil
 }
 
+// Votes is the resolver for the votes field.
+func (r *partyDateResolver) Votes(ctx context.Context, obj *models.PartyDate) ([]*models.PartyDateVote, error) {
+	panic(fmt.Errorf("not implemented: Votes - votes"))
+}
+
 // ID is the resolver for the id field.
 func (r *partyDateVoteResolver) ID(ctx context.Context, obj *models.PartyDateVote) (int, error) {
 	return int(obj.ID), nil
@@ -179,6 +326,11 @@ func (r *partyDateVoteResolver) ID(ctx context.Context, obj *models.PartyDateVot
 // ID is the resolver for the id field.
 func (r *partyLocationResolver) ID(ctx context.Context, obj *models.PartyLocation) (int, error) {
 	return int(obj.ID), nil
+}
+
+// Votes is the resolver for the votes field.
+func (r *partyLocationResolver) Votes(ctx context.Context, obj *models.PartyLocation) ([]*models.PartyLocationVote, error) {
+	panic(fmt.Errorf("not implemented: Votes - votes"))
 }
 
 // ID is the resolver for the id field.
@@ -206,6 +358,11 @@ func (r *queryResolver) Party(ctx context.Context, name *string, adminCode *stri
 // ID is the resolver for the id field.
 func (r *songPlaylistResolver) ID(ctx context.Context, obj *models.SongPlaylist) (int, error) {
 	return int(obj.ID), nil
+}
+
+// Votes is the resolver for the votes field.
+func (r *songPlaylistResolver) Votes(ctx context.Context, obj *models.SongPlaylist) ([]*models.SongPlaylistVote, error) {
+	panic(fmt.Errorf("not implemented: Votes - votes"))
 }
 
 // ID is the resolver for the id field.
