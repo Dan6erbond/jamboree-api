@@ -115,7 +115,7 @@ func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date s
 	}
 	i, err := strconv.ParseInt(date, 10, 64)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	tm := time.Unix(i, 0)
 	partyDate := models.PartyDate{
@@ -315,7 +315,12 @@ func (r *partyDateResolver) Date(ctx context.Context, obj *models.PartyDate) (st
 
 // Votes is the resolver for the votes field.
 func (r *partyDateResolver) Votes(ctx context.Context, obj *models.PartyDate) ([]*models.PartyDateVote, error) {
-	panic(fmt.Errorf("not implemented: Votes - votes"))
+	var votes []*models.PartyDateVote
+	tx := r.db.Find(&votes).Where("party_date_id = ?", obj.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return votes, nil
 }
 
 // ID is the resolver for the id field.
@@ -330,7 +335,12 @@ func (r *partyLocationResolver) ID(ctx context.Context, obj *models.PartyLocatio
 
 // Votes is the resolver for the votes field.
 func (r *partyLocationResolver) Votes(ctx context.Context, obj *models.PartyLocation) ([]*models.PartyLocationVote, error) {
-	panic(fmt.Errorf("not implemented: Votes - votes"))
+	var votes []*models.PartyLocationVote
+	tx := r.db.Find(&votes).Where("party_location_id = ?", obj.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return votes, nil
 }
 
 // ID is the resolver for the id field.
@@ -362,7 +372,12 @@ func (r *songPlaylistResolver) ID(ctx context.Context, obj *models.SongPlaylist)
 
 // Votes is the resolver for the votes field.
 func (r *songPlaylistResolver) Votes(ctx context.Context, obj *models.SongPlaylist) ([]*models.SongPlaylistVote, error) {
-	panic(fmt.Errorf("not implemented: Votes - votes"))
+	var votes []*models.SongPlaylistVote
+	tx := r.db.Find(&votes).Where("song_playlist_id = ?", obj.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return votes, nil
 }
 
 // ID is the resolver for the id field.

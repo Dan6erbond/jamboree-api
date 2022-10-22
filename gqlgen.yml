@@ -72,12 +72,18 @@ models:
   PartyDate:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyDate
+    fields:
+      votes:
+        resolver: true
   PartyDateVote:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyDateVote
   PartyLocation:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyLocation
+    fields:
+      votes:
+        resolver: true
   PartyLocationVote:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyLocationVote
@@ -87,6 +93,9 @@ models:
   SongPlaylist:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.SongPlaylist
+    fields:
+      votes:
+        resolver: true
   SongPlaylistVote:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.SongPlaylistVote
