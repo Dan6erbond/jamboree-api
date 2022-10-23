@@ -1,7 +1,7 @@
 {
   "recommendations": [
     "vivaxy.vscode-conventional-commits",
-    "apollographql.vscode-apollo",
-    "golang.go"
+    "golang.go",
+    "GraphQL.vscode-graphql"
   ]
 }
