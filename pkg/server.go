@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -15,6 +16,15 @@ func NewMux(lc fx.Lifecycle, logger *zap.Logger) *mux.Router {
 	logger.Info("Executing NewMux.")
 
 	r := mux.NewRouter()
+
+	r.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "HEAD", "OPTIONS"},
+		Debug:            true,
+	}).Handler)
+
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", viper.GetString("server.host"), viper.GetString("server.port")),
 		Handler: r,

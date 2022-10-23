@@ -16,6 +16,6 @@ func RegisterRoutes(router *mux.Router, resolver *graph.Resolver, logger *zap.Lo
 
 	router.Use(auth.Middleware())
 
-	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	router.Handle("/query", srv)
+	router.Handle("/", playground.Handler("GraphQL playground", "/graphql")).Methods("GET", "POST", "OPTIONS")
+	router.Handle("/graphql", srv).Methods("GET", "POST", "OPTIONS")
 }
