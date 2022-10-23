@@ -13,7 +13,7 @@ func main() {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("server.port", 5001)
-	viper.SetDefault("server.host", "127.0.0.1")
+	viper.SetDefault("server.host", "0.0.0.0")
 
 	err := viper.ReadInConfig()
 	if err != nil {
