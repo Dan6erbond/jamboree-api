@@ -69,6 +69,10 @@ models:
         resolver: true
       locations:
         resolver: true
+      supplies:
+        resolver: true
+      songPlaylists:
+        resolver: true
   PartyDate:
     model:
       - github.com/dan6erbond/jamboree-api/pkg/models.PartyDate

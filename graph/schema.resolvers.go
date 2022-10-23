@@ -336,6 +336,26 @@ func (r *partyResolver) Locations(ctx context.Context, obj *models.Party) ([]*mo
 	return locations, nil
 }
 
+// Supplies is the resolver for the supplies field.
+func (r *partyResolver) Supplies(ctx context.Context, obj *models.Party) ([]*models.Supply, error) {
+	var supplies []*models.Supply
+	tx := r.db.Where("party_name = ?", obj.Name).Order("id").Find(&supplies)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return supplies, nil
+}
+
+// SongPlaylists is the resolver for the songPlaylists field.
+func (r *partyResolver) SongPlaylists(ctx context.Context, obj *models.Party) ([]*models.SongPlaylist, error) {
+	var songPlaylists []*models.SongPlaylist
+	tx := r.db.Where("party_name = ?", obj.Name).Order("id").Find(&songPlaylists)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return songPlaylists, nil
+}
+
 // ID is the resolver for the id field.
 func (r *partyDateResolver) ID(ctx context.Context, obj *models.PartyDate) (int, error) {
 	return int(obj.ID), nil
