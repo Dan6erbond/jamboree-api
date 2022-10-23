@@ -64,6 +64,18 @@ type ComplexityRoot struct {
 		VotingEnabled  func(childComplexity int) int
 	}
 
+	DeleteDateResult struct {
+		Success func(childComplexity int) int
+	}
+
+	DeleteLocationResult struct {
+		Success func(childComplexity int) int
+	}
+
+	DeleteSongPlaylistResult struct {
+		Success func(childComplexity int) int
+	}
+
 	DeleteSupplyResult struct {
 		Success func(childComplexity int) int
 	}
@@ -74,18 +86,24 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddDate            func(childComplexity int, partyName string, date string) int
-		AddLocation        func(childComplexity int, partyName string, location string) int
-		AddSupply          func(childComplexity int, payload model.AddSupplyPayload) int
-		AssignSupply       func(childComplexity int, supplyID int, username string) int
-		CreateParty        func(childComplexity int, username string) int
-		DeleteSupply       func(childComplexity int, supplyID int) int
-		EditDate           func(childComplexity int, payload model.EditDatePayload) int
-		EditLocation       func(childComplexity int, payload model.EditLocationPayload) int
-		EditParty          func(childComplexity int, partyOptions model.EditPartyRequest) int
-		EditSupply         func(childComplexity int, payload model.EditSupplyPayload) int
-		ToggleDateVote     func(childComplexity int, partyDateID int, username string) int
-		ToggleLocationVote func(childComplexity int, partyLocationID int, username string) int
+		AddDate                func(childComplexity int, partyName string, date string) int
+		AddLocation            func(childComplexity int, partyName string, location string) int
+		AddSongPlaylist        func(childComplexity int, payload model.AddSongPlaylistPayload) int
+		AddSupply              func(childComplexity int, payload model.AddSupplyPayload) int
+		AssignSupply           func(childComplexity int, supplyID int, username string) int
+		CreateParty            func(childComplexity int, username string) int
+		DeleteDate             func(childComplexity int, dateID int) int
+		DeleteLocation         func(childComplexity int, locationID int) int
+		DeleteSongPlaylist     func(childComplexity int, songPlaylistID int) int
+		DeleteSupply           func(childComplexity int, supplyID int) int
+		EditDate               func(childComplexity int, payload model.EditDatePayload) int
+		EditLocation           func(childComplexity int, payload model.EditLocationPayload) int
+		EditParty              func(childComplexity int, partyOptions model.EditPartyRequest) int
+		EditSongPlaylist       func(childComplexity int, payload model.EditSongPlaylistPayload) int
+		EditSupply             func(childComplexity int, payload model.EditSupplyPayload) int
+		ToggleDateVote         func(childComplexity int, partyDateID int, username string) int
+		ToggleLocationVote     func(childComplexity int, partyLocationID int, username string) int
+		ToggleSongPlaylistVote func(childComplexity int, songPlaylistID int, username string) int
 	}
 
 	Party struct {
@@ -163,6 +181,12 @@ type MutationResolver interface {
 	ToggleLocationVote(ctx context.Context, partyLocationID int, username string) (*models.PartyLocationVote, error)
 	EditDate(ctx context.Context, payload model.EditDatePayload) (*models.PartyDate, error)
 	EditLocation(ctx context.Context, payload model.EditLocationPayload) (*models.PartyLocation, error)
+	DeleteDate(ctx context.Context, dateID int) (*model.DeleteDateResult, error)
+	DeleteLocation(ctx context.Context, locationID int) (*model.DeleteLocationResult, error)
+	AddSongPlaylist(ctx context.Context, payload model.AddSongPlaylistPayload) (*models.SongPlaylist, error)
+	EditSongPlaylist(ctx context.Context, payload model.EditSongPlaylistPayload) (*models.SongPlaylist, error)
+	ToggleSongPlaylistVote(ctx context.Context, songPlaylistID int, username string) (*models.SongPlaylistVote, error)
+	DeleteSongPlaylist(ctx context.Context, songPlaylistID int) (*model.DeleteSongPlaylistResult, error)
 }
 type PartyResolver interface {
 	Settings(ctx context.Context, obj *models.Party) (*model.PartySettings, error)
@@ -245,6 +269,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DatePartySettings.VotingEnabled(childComplexity), true
 
+	case "DeleteDateResult.success":
+		if e.complexity.DeleteDateResult.Success == nil {
+			break
+		}
+
+		return e.complexity.DeleteDateResult.Success(childComplexity), true
+
+	case "DeleteLocationResult.success":
+		if e.complexity.DeleteLocationResult.Success == nil {
+			break
+		}
+
+		return e.complexity.DeleteLocationResult.Success(childComplexity), true
+
+	case "DeleteSongPlaylistResult.success":
+		if e.complexity.DeleteSongPlaylistResult.Success == nil {
+			break
+		}
+
+		return e.complexity.DeleteSongPlaylistResult.Success(childComplexity), true
+
 	case "DeleteSupplyResult.success":
 		if e.complexity.DeleteSupplyResult.Success == nil {
 			break
@@ -290,6 +335,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AddLocation(childComplexity, args["partyName"].(string), args["location"].(string)), true
 
+	case "Mutation.addSongPlaylist":
+		if e.complexity.Mutation.AddSongPlaylist == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addSongPlaylist_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddSongPlaylist(childComplexity, args["payload"].(model.AddSongPlaylistPayload)), true
+
 	case "Mutation.addSupply":
 		if e.complexity.Mutation.AddSupply == nil {
 			break
@@ -325,6 +382,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateParty(childComplexity, args["username"].(string)), true
+
+	case "Mutation.deleteDate":
+		if e.complexity.Mutation.DeleteDate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteDate(childComplexity, args["dateId"].(int)), true
+
+	case "Mutation.deleteLocation":
+		if e.complexity.Mutation.DeleteLocation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteLocation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteLocation(childComplexity, args["locationId"].(int)), true
+
+	case "Mutation.deleteSongPlaylist":
+		if e.complexity.Mutation.DeleteSongPlaylist == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteSongPlaylist_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteSongPlaylist(childComplexity, args["songPlaylistId"].(int)), true
 
 	case "Mutation.deleteSupply":
 		if e.complexity.Mutation.DeleteSupply == nil {
@@ -374,6 +467,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.EditParty(childComplexity, args["partyOptions"].(model.EditPartyRequest)), true
 
+	case "Mutation.editSongPlaylist":
+		if e.complexity.Mutation.EditSongPlaylist == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editSongPlaylist_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditSongPlaylist(childComplexity, args["payload"].(model.EditSongPlaylistPayload)), true
+
 	case "Mutation.editSupply":
 		if e.complexity.Mutation.EditSupply == nil {
 			break
@@ -409,6 +514,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ToggleLocationVote(childComplexity, args["partyLocationId"].(int), args["username"].(string)), true
+
+	case "Mutation.toggleSongPlaylistVote":
+		if e.complexity.Mutation.ToggleSongPlaylistVote == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_toggleSongPlaylistVote_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ToggleSongPlaylistVote(childComplexity, args["songPlaylistId"].(int), args["username"].(string)), true
 
 	case "Party.creator":
 		if e.complexity.Party.Creator == nil {
@@ -640,10 +757,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAddSongPlaylistPayload,
 		ec.unmarshalInputAddSupplyPayload,
 		ec.unmarshalInputEditDatePayload,
 		ec.unmarshalInputEditLocationPayload,
 		ec.unmarshalInputEditPartyRequest,
+		ec.unmarshalInputEditSongPlaylistPayload,
 		ec.unmarshalInputEditSupplyPayload,
 	)
 	first := true
@@ -767,17 +886,6 @@ type Supply {
   emoji: String!
 }
 
-type SongPlaylist {
-  id: Int!
-  link: String!
-  votes: [SongPlaylistVote!]!
-}
-
-type SongPlaylistVote {
-  id: Int!
-  username: String!
-}
-
 type Query {
   party(name: String, adminCode: String): Party
 }
@@ -817,6 +925,14 @@ type DeleteSupplyResult {
   success: Boolean!
 }
 
+type DeleteDateResult {
+  success: Boolean!
+}
+
+type DeleteLocationResult {
+  success: Boolean!
+}
+
 input EditDatePayload {
   id: Int!
   date: String!
@@ -843,6 +959,40 @@ type Mutation {
   ): PartyLocationVote
   editDate(payload:EditDatePayload!): PartyDate!
   editLocation(payload:EditLocationPayload!): PartyLocation!
+  deleteDate(dateId: Int!): DeleteDateResult!
+  deleteLocation(locationId: Int!): DeleteLocationResult!
+}
+`, BuiltIn: false},
+	{Name: "../song_playlist.schema.graphqls", Input: `type SongPlaylist {
+  id: Int!
+  link: String!
+  votes: [SongPlaylistVote!]!
+}
+
+type SongPlaylistVote {
+  id: Int!
+  username: String!
+}
+
+input AddSongPlaylistPayload {
+  partyName: String!
+  link: String!
+}
+
+input EditSongPlaylistPayload {
+  id: Int!
+  link: String!
+}
+
+type DeleteSongPlaylistResult {
+  success: Boolean!
+}
+
+extend type Mutation {
+  addSongPlaylist(payload: AddSongPlaylistPayload!): SongPlaylist!
+  editSongPlaylist(payload: EditSongPlaylistPayload!): SongPlaylist!
+  toggleSongPlaylistVote(songPlaylistId: Int!, username: String!): SongPlaylistVote
+  deleteSongPlaylist(songPlaylistId: Int!): DeleteSongPlaylistResult!
 }
 `, BuiltIn: false},
 }
@@ -900,6 +1050,21 @@ func (ec *executionContext) field_Mutation_addLocation_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_addSongPlaylist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.AddSongPlaylistPayload
+	if tmp, ok := rawArgs["payload"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("payload"))
+		arg0, err = ec.unmarshalNAddSongPlaylistPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐAddSongPlaylistPayload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["payload"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addSupply_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -951,6 +1116,51 @@ func (ec *executionContext) field_Mutation_createParty_args(ctx context.Context,
 		}
 	}
 	args["username"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteDate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["dateId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dateId"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["dateId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteLocation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["locationId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("locationId"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["locationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSongPlaylist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["songPlaylistId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("songPlaylistId"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["songPlaylistId"] = arg0
 	return args, nil
 }
 
@@ -1014,6 +1224,21 @@ func (ec *executionContext) field_Mutation_editParty_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_editSongPlaylist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.EditSongPlaylistPayload
+	if tmp, ok := rawArgs["payload"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("payload"))
+		arg0, err = ec.unmarshalNEditSongPlaylistPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditSongPlaylistPayload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["payload"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_editSupply_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1065,6 +1290,30 @@ func (ec *executionContext) field_Mutation_toggleLocationVote_args(ctx context.C
 		}
 	}
 	args["partyLocationId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["username"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_toggleSongPlaylistVote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["songPlaylistId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("songPlaylistId"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["songPlaylistId"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["username"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
@@ -1320,6 +1569,138 @@ func (ec *executionContext) _DatePartySettings_optionsEnabled(ctx context.Contex
 func (ec *executionContext) fieldContext_DatePartySettings_optionsEnabled(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DatePartySettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteDateResult_success(ctx context.Context, field graphql.CollectedField, obj *model.DeleteDateResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteDateResult_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteDateResult_success(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteDateResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteLocationResult_success(ctx context.Context, field graphql.CollectedField, obj *model.DeleteLocationResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteLocationResult_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteLocationResult_success(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteLocationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteSongPlaylistResult_success(ctx context.Context, field graphql.CollectedField, obj *model.DeleteSongPlaylistResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteSongPlaylistResult_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteSongPlaylistResult_success(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteSongPlaylistResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2222,6 +2603,367 @@ func (ec *executionContext) fieldContext_Mutation_editLocation(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_editLocation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteDate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteDate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteDate(rctx, fc.Args["dateId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeleteDateResult)
+	fc.Result = res
+	return ec.marshalNDeleteDateResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteDateResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteDate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteDateResult_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteDateResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteDate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteLocation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteLocation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteLocation(rctx, fc.Args["locationId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeleteLocationResult)
+	fc.Result = res
+	return ec.marshalNDeleteLocationResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteLocationResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteLocation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteLocationResult_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteLocationResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteLocation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addSongPlaylist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addSongPlaylist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddSongPlaylist(rctx, fc.Args["payload"].(model.AddSongPlaylistPayload))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.SongPlaylist)
+	fc.Result = res
+	return ec.marshalNSongPlaylist2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addSongPlaylist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SongPlaylist_id(ctx, field)
+			case "link":
+				return ec.fieldContext_SongPlaylist_link(ctx, field)
+			case "votes":
+				return ec.fieldContext_SongPlaylist_votes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SongPlaylist", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addSongPlaylist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_editSongPlaylist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_editSongPlaylist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditSongPlaylist(rctx, fc.Args["payload"].(model.EditSongPlaylistPayload))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.SongPlaylist)
+	fc.Result = res
+	return ec.marshalNSongPlaylist2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_editSongPlaylist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SongPlaylist_id(ctx, field)
+			case "link":
+				return ec.fieldContext_SongPlaylist_link(ctx, field)
+			case "votes":
+				return ec.fieldContext_SongPlaylist_votes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SongPlaylist", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_editSongPlaylist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_toggleSongPlaylistVote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_toggleSongPlaylistVote(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ToggleSongPlaylistVote(rctx, fc.Args["songPlaylistId"].(int), fc.Args["username"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.SongPlaylistVote)
+	fc.Result = res
+	return ec.marshalOSongPlaylistVote2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistVote(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_toggleSongPlaylistVote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SongPlaylistVote_id(ctx, field)
+			case "username":
+				return ec.fieldContext_SongPlaylistVote_username(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SongPlaylistVote", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_toggleSongPlaylistVote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteSongPlaylist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteSongPlaylist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteSongPlaylist(rctx, fc.Args["songPlaylistId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeleteSongPlaylistResult)
+	fc.Result = res
+	return ec.marshalNDeleteSongPlaylistResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteSongPlaylistResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteSongPlaylist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteSongPlaylistResult_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteSongPlaylistResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteSongPlaylist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5589,6 +6331,42 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddSongPlaylistPayload(ctx context.Context, obj interface{}) (model.AddSongPlaylistPayload, error) {
+	var it model.AddSongPlaylistPayload
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"partyName", "link"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "partyName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("partyName"))
+			it.PartyName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
+			it.Link, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAddSupplyPayload(ctx context.Context, obj interface{}) (model.AddSupplyPayload, error) {
 	var it model.AddSupplyPayload
 	asMap := map[string]interface{}{}
@@ -5789,6 +6567,42 @@ func (ec *executionContext) unmarshalInputEditPartyRequest(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEditSongPlaylistPayload(ctx context.Context, obj interface{}) (model.EditSongPlaylistPayload, error) {
+	var it model.EditSongPlaylistPayload
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "link"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
+			it.Link, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputEditSupplyPayload(ctx context.Context, obj interface{}) (model.EditSupplyPayload, error) {
 	var it model.EditSupplyPayload
 	asMap := map[string]interface{}{}
@@ -5920,6 +6734,90 @@ func (ec *executionContext) _DatePartySettings(ctx context.Context, sel ast.Sele
 		case "optionsEnabled":
 
 			out.Values[i] = ec._DatePartySettings_optionsEnabled(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteDateResultImplementors = []string{"DeleteDateResult"}
+
+func (ec *executionContext) _DeleteDateResult(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteDateResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteDateResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteDateResult")
+		case "success":
+
+			out.Values[i] = ec._DeleteDateResult_success(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteLocationResultImplementors = []string{"DeleteLocationResult"}
+
+func (ec *executionContext) _DeleteLocationResult(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteLocationResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteLocationResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteLocationResult")
+		case "success":
+
+			out.Values[i] = ec._DeleteLocationResult_success(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteSongPlaylistResultImplementors = []string{"DeleteSongPlaylistResult"}
+
+func (ec *executionContext) _DeleteSongPlaylistResult(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteSongPlaylistResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteSongPlaylistResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteSongPlaylistResult")
+		case "success":
+
+			out.Values[i] = ec._DeleteSongPlaylistResult_success(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -6114,6 +7012,57 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_editLocation(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteDate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteDate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteLocation":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteLocation(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "addSongPlaylist":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addSongPlaylist(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "editSongPlaylist":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_editSongPlaylist(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "toggleSongPlaylistVote":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_toggleSongPlaylistVote(ctx, field)
+			})
+
+		case "deleteSongPlaylist":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteSongPlaylist(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -7101,6 +8050,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddSongPlaylistPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐAddSongPlaylistPayload(ctx context.Context, v interface{}) (model.AddSongPlaylistPayload, error) {
+	res, err := ec.unmarshalInputAddSongPlaylistPayload(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNAddSupplyPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐAddSupplyPayload(ctx context.Context, v interface{}) (model.AddSupplyPayload, error) {
 	res, err := ec.unmarshalInputAddSupplyPayload(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7145,6 +8099,48 @@ func (ec *executionContext) marshalNDatePartySettings2ᚖgithubᚗcomᚋdan6erbo
 	return ec._DatePartySettings(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDeleteDateResult2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteDateResult(ctx context.Context, sel ast.SelectionSet, v model.DeleteDateResult) graphql.Marshaler {
+	return ec._DeleteDateResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteDateResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteDateResult(ctx context.Context, sel ast.SelectionSet, v *model.DeleteDateResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteDateResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteLocationResult2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteLocationResult(ctx context.Context, sel ast.SelectionSet, v model.DeleteLocationResult) graphql.Marshaler {
+	return ec._DeleteLocationResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteLocationResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteLocationResult(ctx context.Context, sel ast.SelectionSet, v *model.DeleteLocationResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteLocationResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteSongPlaylistResult2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteSongPlaylistResult(ctx context.Context, sel ast.SelectionSet, v model.DeleteSongPlaylistResult) graphql.Marshaler {
+	return ec._DeleteSongPlaylistResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteSongPlaylistResult2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteSongPlaylistResult(ctx context.Context, sel ast.SelectionSet, v *model.DeleteSongPlaylistResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteSongPlaylistResult(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNDeleteSupplyResult2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐDeleteSupplyResult(ctx context.Context, sel ast.SelectionSet, v model.DeleteSupplyResult) graphql.Marshaler {
 	return ec._DeleteSupplyResult(ctx, sel, &v)
 }
@@ -7171,6 +8167,11 @@ func (ec *executionContext) unmarshalNEditLocationPayload2githubᚗcomᚋdan6erb
 
 func (ec *executionContext) unmarshalNEditPartyRequest2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditPartyRequest(ctx context.Context, v interface{}) (model.EditPartyRequest, error) {
 	res, err := ec.unmarshalInputEditPartyRequest(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNEditSongPlaylistPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditSongPlaylistPayload(ctx context.Context, v interface{}) (model.EditSongPlaylistPayload, error) {
+	res, err := ec.unmarshalInputEditSongPlaylistPayload(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -7469,6 +8470,10 @@ func (ec *executionContext) marshalNPartySettings2ᚖgithubᚗcomᚋdan6erbond�
 		return graphql.Null
 	}
 	return ec._PartySettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSongPlaylist2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx context.Context, sel ast.SelectionSet, v models.SongPlaylist) graphql.Marshaler {
+	return ec._SongPlaylist(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNSongPlaylist2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SongPlaylist) graphql.Marshaler {
@@ -7987,6 +8992,13 @@ func (ec *executionContext) marshalOPartyLocationVote2ᚖgithubᚗcomᚋdan6erbo
 		return graphql.Null
 	}
 	return ec._PartyLocationVote(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSongPlaylistVote2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistVote(ctx context.Context, sel ast.SelectionSet, v *models.SongPlaylistVote) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SongPlaylistVote(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

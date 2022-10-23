@@ -313,6 +313,38 @@ func (r *mutationResolver) EditLocation(ctx context.Context, payload graphqlMode
 	return &partyLocation, nil
 }
 
+// DeleteDate is the resolver for the deleteDate field.
+func (r *mutationResolver) DeleteDate(ctx context.Context, dateID int) (*graphqlModel.DeleteDateResult, error) {
+	var partyDate models.PartyDate
+	tx := r.db.Where("id = ?", dateID).First(&partyDate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tx = r.db.Delete(&partyDate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &graphqlModel.DeleteDateResult{
+		Success: true,
+	}, nil
+}
+
+// DeleteLocation is the resolver for the deleteLocation field.
+func (r *mutationResolver) DeleteLocation(ctx context.Context, locationID int) (*graphqlModel.DeleteLocationResult, error) {
+	var partyLocation models.PartyLocation
+	tx := r.db.Where("id = ?", locationID).First(&partyLocation)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tx = r.db.Delete(&partyLocation)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &graphqlModel.DeleteLocationResult{
+		Success: true,
+	}, nil
+}
+
 // Settings is the resolver for the settings field.
 func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graphqlModel.PartySettings, error) {
 	return &graphqlModel.PartySettings{
@@ -464,6 +496,4 @@ type partyDateVoteResolver struct{ *Resolver }
 type partyLocationResolver struct{ *Resolver }
 type partyLocationVoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type songPlaylistResolver struct{ *Resolver }
-type songPlaylistVoteResolver struct{ *Resolver }
 type supplyResolver struct{ *Resolver }

@@ -2,6 +2,11 @@
 
 package model
 
+type AddSongPlaylistPayload struct {
+	PartyName string `json:"partyName"`
+	Link      string `json:"link"`
+}
+
 type AddSupplyPayload struct {
 	PartyName string  `json:"partyName"`
 	Name      string  `json:"name"`
@@ -19,6 +24,18 @@ type CreatePartyResult struct {
 type DatePartySettings struct {
 	VotingEnabled  bool `json:"votingEnabled"`
 	OptionsEnabled bool `json:"optionsEnabled"`
+}
+
+type DeleteDateResult struct {
+	Success bool `json:"success"`
+}
+
+type DeleteLocationResult struct {
+	Success bool `json:"success"`
+}
+
+type DeleteSongPlaylistResult struct {
+	Success bool `json:"success"`
 }
 
 type DeleteSupplyResult struct {
@@ -41,6 +58,11 @@ type EditPartyRequest struct {
 	DateVotingEnabled      *bool  `json:"dateVotingEnabled"`
 	LocationOptionsEnabled *bool  `json:"locationOptionsEnabled"`
 	LocationVotingEnabled  *bool  `json:"locationVotingEnabled"`
+}
+
+type EditSongPlaylistPayload struct {
+	ID   int    `json:"id"`
+	Link string `json:"link"`
 }
 
 type EditSupplyPayload struct {

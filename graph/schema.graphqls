@@ -99,6 +99,14 @@ type DeleteSupplyResult {
   success: Boolean!
 }
 
+type DeleteDateResult {
+  success: Boolean!
+}
+
+type DeleteLocationResult {
+  success: Boolean!
+}
+
 input EditDatePayload {
   id: Int!
   date: String!
@@ -125,4 +133,6 @@ type Mutation {
   ): PartyLocationVote
   editDate(payload:EditDatePayload!): PartyDate!
   editLocation(payload:EditLocationPayload!): PartyLocation!
+  deleteDate(dateId: Int!): DeleteDateResult!
+  deleteLocation(locationId: Int!): DeleteLocationResult!
 }
