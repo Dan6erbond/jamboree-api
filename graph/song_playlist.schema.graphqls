@@ -1,0 +1,31 @@
+type SongPlaylist {
+  id: Int!
+  link: String!
+  votes: [SongPlaylistVote!]!
+}
+
+type SongPlaylistVote {
+  id: Int!
+  username: String!
+}
+
+input AddSongPlaylistPayload {
+  partyName: String!
+  link: String!
+}
+
+input EditSongPlaylistPayload {
+  id: Int!
+  link: String!
+}
+
+type DeleteSongPlaylistResult {
+  success: Boolean!
+}
+
+extend type Mutation {
+  addSongPlaylist(payload: AddSongPlaylistPayload!): SongPlaylist!
+  editSongPlaylist(payload: EditSongPlaylistPayload!): SongPlaylist!
+  toggleSongPlaylistVote(songPlaylistId: Int!, username: String!): SongPlaylistVote
+  deleteSongPlaylist(songPlaylistId: Int!): DeleteSongPlaylistResult!
+}

@@ -427,26 +427,6 @@ func (r *queryResolver) Party(ctx context.Context, name *string, adminCode *stri
 }
 
 // ID is the resolver for the id field.
-func (r *songPlaylistResolver) ID(ctx context.Context, obj *models.SongPlaylist) (int, error) {
-	return int(obj.ID), nil
-}
-
-// Votes is the resolver for the votes field.
-func (r *songPlaylistResolver) Votes(ctx context.Context, obj *models.SongPlaylist) ([]*models.SongPlaylistVote, error) {
-	var votes []*models.SongPlaylistVote
-	tx := r.db.Where("song_playlist_id = ?", obj.ID).Find(&votes)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return votes, nil
-}
-
-// ID is the resolver for the id field.
-func (r *songPlaylistVoteResolver) ID(ctx context.Context, obj *models.SongPlaylistVote) (int, error) {
-	return int(obj.ID), nil
-}
-
-// ID is the resolver for the id field.
 func (r *supplyResolver) ID(ctx context.Context, obj *models.Supply) (int, error) {
 	return int(obj.ID), nil
 }
@@ -473,14 +453,6 @@ func (r *Resolver) PartyLocationVote() generated.PartyLocationVoteResolver {
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
-// SongPlaylist returns generated.SongPlaylistResolver implementation.
-func (r *Resolver) SongPlaylist() generated.SongPlaylistResolver { return &songPlaylistResolver{r} }
-
-// SongPlaylistVote returns generated.SongPlaylistVoteResolver implementation.
-func (r *Resolver) SongPlaylistVote() generated.SongPlaylistVoteResolver {
-	return &songPlaylistVoteResolver{r}
-}
 
 // Supply returns generated.SupplyResolver implementation.
 func (r *Resolver) Supply() generated.SupplyResolver { return &supplyResolver{r} }

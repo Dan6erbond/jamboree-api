@@ -60,17 +60,6 @@ type Supply {
   emoji: String!
 }
 
-type SongPlaylist {
-  id: Int!
-  link: String!
-  votes: [SongPlaylistVote!]!
-}
-
-type SongPlaylistVote {
-  id: Int!
-  username: String!
-}
-
 type Query {
   party(name: String, adminCode: String): Party
 }
