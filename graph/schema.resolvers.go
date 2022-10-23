@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dan6erbond/jamboree-api/graph/generated"
-	graphqlModel "github.com/dan6erbond/jamboree-api/graph/model"
+	"github.com/dan6erbond/jamboree-api/graph/model"
 	randomstring "github.com/dan6erbond/jamboree-api/internal/random_string"
 	uniquename "github.com/dan6erbond/jamboree-api/internal/unique_name"
 	"github.com/dan6erbond/jamboree-api/pkg/auth"
@@ -20,7 +20,7 @@ import (
 )
 
 // CreateParty is the resolver for the createParty field.
-func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*graphqlModel.CreatePartyResult, error) {
+func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*model.CreatePartyResult, error) {
 	name := uniquename.GenerateUniqueName()
 	for {
 		var count int64
@@ -40,14 +40,14 @@ func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*g
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return &graphqlModel.CreatePartyResult{
+	return &model.CreatePartyResult{
 		Name:      name,
 		AdminCode: adminCode,
 	}, nil
 }
 
 // EditParty is the resolver for the editParty field.
-func (r *mutationResolver) EditParty(ctx context.Context, partyOptions graphqlModel.EditPartyRequest) (*models.Party, error) {
+func (r *mutationResolver) EditParty(ctx context.Context, partyOptions model.EditPartyRequest) (*models.Party, error) {
 	var party models.Party
 	tx := r.db.Where("name = ?", partyOptions.PartyName).First(&party)
 	if tx.Error != nil {
@@ -140,7 +140,7 @@ func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date s
 }
 
 // AddSupply is the resolver for the addSupply field.
-func (r *mutationResolver) AddSupply(ctx context.Context, payload graphqlModel.AddSupplyPayload) (*models.Supply, error) {
+func (r *mutationResolver) AddSupply(ctx context.Context, payload model.AddSupplyPayload) (*models.Supply, error) {
 	var party models.Party
 	tx := r.db.Where("name = ?", payload.PartyName).First(&party)
 	if tx.Error != nil {
@@ -168,7 +168,7 @@ func (r *mutationResolver) AddSupply(ctx context.Context, payload graphqlModel.A
 }
 
 // EditSupply is the resolver for the editSupply field.
-func (r *mutationResolver) EditSupply(ctx context.Context, payload graphqlModel.EditSupplyPayload) (*models.Supply, error) {
+func (r *mutationResolver) EditSupply(ctx context.Context, payload model.EditSupplyPayload) (*models.Supply, error) {
 	var supply models.Supply
 	tx := r.db.Where("id = ?", payload.ID).First(&supply)
 	if tx.Error != nil {
@@ -215,7 +215,7 @@ func (r *mutationResolver) AssignSupply(ctx context.Context, supplyID int, usern
 }
 
 // DeleteSupply is the resolver for the deleteSupply field.
-func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*graphqlModel.DeleteSupplyResult, error) {
+func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*model.DeleteSupplyResult, error) {
 	var supply models.Supply
 	tx := r.db.Where("id = ?", supplyID).First(&supply)
 	if tx.Error != nil {
@@ -225,7 +225,7 @@ func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*gra
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return &graphqlModel.DeleteSupplyResult{
+	return &model.DeleteSupplyResult{
 		Success: true,
 	}, nil
 }
@@ -281,7 +281,7 @@ func (r *mutationResolver) ToggleLocationVote(ctx context.Context, partyLocation
 }
 
 // EditDate is the resolver for the editDate field.
-func (r *mutationResolver) EditDate(ctx context.Context, payload graphqlModel.EditDatePayload) (*models.PartyDate, error) {
+func (r *mutationResolver) EditDate(ctx context.Context, payload model.EditDatePayload) (*models.PartyDate, error) {
 	var partyDate models.PartyDate
 	tx := r.db.Where("id = ?", payload.ID).First(&partyDate)
 	if tx.Error != nil {
@@ -300,7 +300,7 @@ func (r *mutationResolver) EditDate(ctx context.Context, payload graphqlModel.Ed
 }
 
 // EditLocation is the resolver for the editLocation field.
-func (r *mutationResolver) EditLocation(ctx context.Context, payload graphqlModel.EditLocationPayload) (*models.PartyLocation, error) {
+func (r *mutationResolver) EditLocation(ctx context.Context, payload model.EditLocationPayload) (*models.PartyLocation, error) {
 	var partyLocation models.PartyLocation
 	tx := r.db.Where("id = ?", payload.ID).First(&partyLocation)
 	if tx.Error != nil {
@@ -314,7 +314,7 @@ func (r *mutationResolver) EditLocation(ctx context.Context, payload graphqlMode
 }
 
 // DeleteDate is the resolver for the deleteDate field.
-func (r *mutationResolver) DeleteDate(ctx context.Context, dateID int) (*graphqlModel.DeleteDateResult, error) {
+func (r *mutationResolver) DeleteDate(ctx context.Context, dateID int) (*model.DeleteDateResult, error) {
 	var partyDate models.PartyDate
 	tx := r.db.Where("id = ?", dateID).First(&partyDate)
 	if tx.Error != nil {
@@ -324,13 +324,13 @@ func (r *mutationResolver) DeleteDate(ctx context.Context, dateID int) (*graphql
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return &graphqlModel.DeleteDateResult{
+	return &model.DeleteDateResult{
 		Success: true,
 	}, nil
 }
 
 // DeleteLocation is the resolver for the deleteLocation field.
-func (r *mutationResolver) DeleteLocation(ctx context.Context, locationID int) (*graphqlModel.DeleteLocationResult, error) {
+func (r *mutationResolver) DeleteLocation(ctx context.Context, locationID int) (*model.DeleteLocationResult, error) {
 	var partyLocation models.PartyLocation
 	tx := r.db.Where("id = ?", locationID).First(&partyLocation)
 	if tx.Error != nil {
@@ -340,19 +340,19 @@ func (r *mutationResolver) DeleteLocation(ctx context.Context, locationID int) (
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return &graphqlModel.DeleteLocationResult{
+	return &model.DeleteLocationResult{
 		Success: true,
 	}, nil
 }
 
 // Settings is the resolver for the settings field.
-func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graphqlModel.PartySettings, error) {
-	return &graphqlModel.PartySettings{
-		Dates: &graphqlModel.DatePartySettings{
+func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*model.PartySettings, error) {
+	return &model.PartySettings{
+		Dates: &model.DatePartySettings{
 			VotingEnabled:  obj.DateVotingEnabled,
 			OptionsEnabled: obj.DateOptionsEnabled,
 		},
-		Locations: &graphqlModel.LocationPartySettings{
+		Locations: &model.LocationPartySettings{
 			VotingEnabled:  obj.LocationVotingEnabled,
 			OptionsEnabled: obj.LocationOptionsEnabled,
 		},
