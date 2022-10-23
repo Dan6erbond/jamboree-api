@@ -2,8 +2,11 @@
 #
 # https://gqlgen.com/getting-started/
 
+scalar Time
+
 type Party {
   name: String!
+  creator: String!
   settings: PartySettings!
   dates: [PartyDate!]!
   locations: [PartyLocation!]!
@@ -28,7 +31,7 @@ type LocationPartySettings {
 
 type PartyDate {
   id: Int!
-  date: String!
+  date: Time!
   votes: [PartyDateVote!]!
 }
 
@@ -100,10 +103,21 @@ input EditSupplyPayload {
   quantity: Int
   isUrgent: Boolean
   emoji: String
+  assignee: String
 }
 
 type DeleteSupplyResult {
   success: Boolean!
+}
+
+input EditDatePayload {
+  id: Int!
+  date: String!
+}
+
+input EditLocationPayload {
+  id: Int!
+  location: String!
 }
 
 type Mutation {
@@ -116,5 +130,10 @@ type Mutation {
   assignSupply(supplyId: Int!, username: String!): Supply!
   deleteSupply(supplyId: Int!): DeleteSupplyResult!
   toggleDateVote(partyDateId: Int!, username: String!): PartyDateVote
-  toggleLocationVote(partyLocationId: Int!, username: String!): PartyLocationVote
+  toggleLocationVote(
+    partyLocationId: Int!
+    username: String!
+  ): PartyLocationVote
+  editDate(payload:EditDatePayload!): PartyDate!
+  editLocation(payload:EditLocationPayload!): PartyLocation!
 }

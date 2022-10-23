@@ -269,6 +269,39 @@ func (r *mutationResolver) ToggleLocationVote(ctx context.Context, partyLocation
 	return nil, nil
 }
 
+// EditDate is the resolver for the editDate field.
+func (r *mutationResolver) EditDate(ctx context.Context, payload graphqlModel.EditDatePayload) (*models.PartyDate, error) {
+	var partyDate models.PartyDate
+	tx := r.db.Where("id = ?", payload.ID).First(&partyDate)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	i, err := strconv.ParseInt(payload.Date, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	tm := time.Unix(i, 0)
+	tx = r.db.Model(&partyDate).Updates(map[string]interface{}{"date": &tm})
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &partyDate, nil
+}
+
+// EditLocation is the resolver for the editLocation field.
+func (r *mutationResolver) EditLocation(ctx context.Context, payload graphqlModel.EditLocationPayload) (*models.PartyLocation, error) {
+	var partyLocation models.PartyLocation
+	tx := r.db.Where("id = ?", payload.ID).First(&partyLocation)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tx = r.db.Model(&partyLocation).Updates(map[string]interface{}{"location": payload.Location})
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &partyLocation, nil
+}
+
 // Settings is the resolver for the settings field.
 func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graphqlModel.PartySettings, error) {
 	return &graphqlModel.PartySettings{
