@@ -10,3 +10,11 @@ services:
       POSTGRES_DB: jamboree
     volumes:
       - ./.postgres/data:/var/lib/postgresql/data
+    networks:
+      jamboree:
+        aliases:
+          - db
+
+networks:
+  jamboree:
+    external: true

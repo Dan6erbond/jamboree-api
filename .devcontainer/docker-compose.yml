@@ -12,11 +12,12 @@ services:
         VARIANT: "1.18"
         # Options
         # NODE_VERSION: "16"
-
-    network_mode: service:db
-
     volumes:
       - .:/workspace:cached
+    networks:
+      jamboree:
+        aliases:
+          - backend
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -26,3 +27,7 @@ services:
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+networks:
+  jamboree:
+    external: true
