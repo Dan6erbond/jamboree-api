@@ -258,7 +258,7 @@ func (r *mutationResolver) ToggleDateVote(ctx context.Context, partyDateID int, 
 // ToggleLocationVote is the resolver for the toggleLocationVote field.
 func (r *mutationResolver) ToggleLocationVote(ctx context.Context, partyLocationID int, username string) (*models.PartyLocationVote, error) {
 	var partyLocationVote models.PartyLocationVote
-	tx := r.db.Where("id = ? AND username = ?", partyLocationID, username).First(&partyLocationVote)
+	tx := r.db.Where("party_location_id = ? AND username = ?", partyLocationID, username).First(&partyLocationVote)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			partyLocationVote = models.PartyLocationVote{
