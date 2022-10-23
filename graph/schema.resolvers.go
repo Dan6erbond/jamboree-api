@@ -30,7 +30,7 @@ func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*g
 		}
 		name = uniquename.GenerateUniqueName()
 	}
-	adminCode := randomstring.GenerateRandomString(32)
+	adminCode := randomstring.GenerateRandomString(64)
 	party := models.Party{
 		Name:      name,
 		AdminCode: adminCode,
@@ -49,27 +49,27 @@ func (r *mutationResolver) CreateParty(ctx context.Context, username string) (*g
 // EditParty is the resolver for the editParty field.
 func (r *mutationResolver) EditParty(ctx context.Context, partyOptions graphqlModel.EditPartyRequest) (*models.Party, error) {
 	var party models.Party
-	tx := r.db.First(&party).Where("name = ?", partyOptions.PartyName)
+	tx := r.db.Where("name = ?", partyOptions.PartyName).First(&party)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	if *auth.ForContext(ctx) == party.AdminCode {
+	if *auth.ForContext(ctx) != party.AdminCode {
 		return nil, fmt.Errorf("cannot edit party without an admin code")
 	}
-	partyUpdate := models.Party{}
+	updates := map[string]interface{}{}
 	if partyOptions.DateOptionsEnabled != nil {
-		partyUpdate.DateOptionsEnabled = *partyOptions.DateOptionsEnabled
+		updates["date_options_enabled"] = *partyOptions.DateOptionsEnabled
 	}
 	if partyOptions.DateVotingEnabled != nil {
-		partyUpdate.DateVotingEnabled = *partyOptions.DateVotingEnabled
+		updates["date_voting_enabled"] = *partyOptions.DateVotingEnabled
 	}
 	if partyOptions.LocationOptionsEnabled != nil {
-		partyUpdate.LocationOptionsEnabled = *partyOptions.LocationOptionsEnabled
+		updates["location_options_enabled"] = *partyOptions.LocationOptionsEnabled
 	}
 	if partyOptions.LocationVotingEnabled != nil {
-		partyUpdate.LocationVotingEnabled = *partyOptions.LocationVotingEnabled
+		updates["location_voting_enabled"] = *partyOptions.LocationVotingEnabled
 	}
-	tx = r.db.Model(&party).Updates(partyUpdate)
+	tx = r.db.Model(&party).Updates(updates)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -79,11 +79,16 @@ func (r *mutationResolver) EditParty(ctx context.Context, partyOptions graphqlMo
 // AddLocation is the resolver for the addLocation field.
 func (r *mutationResolver) AddLocation(ctx context.Context, partyName string, location string) (*models.PartyLocation, error) {
 	var party models.Party
-	tx := r.db.First(&party).Where("name = ?", partyName)
+	tx := r.db.Where("name = ?", partyName).First(&party)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	if !party.LocationVotingEnabled {
+	var partyLocations []*models.PartyLocation
+	tx = r.db.Where("party_name = ?", party.Name).Find(&partyLocations)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if !party.LocationVotingEnabled && len(partyLocations) >= 1 {
 		return nil, fmt.Errorf("cannot add locations to this party, please ask an admin to enable this")
 	}
 	if !party.LocationOptionsEnabled && *auth.ForContext(ctx) != party.AdminCode {
@@ -103,11 +108,16 @@ func (r *mutationResolver) AddLocation(ctx context.Context, partyName string, lo
 // AddDate is the resolver for the addDate field.
 func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date string) (*models.PartyDate, error) {
 	var party models.Party
-	tx := r.db.First(&party).Where("name = ?", partyName)
+	tx := r.db.Where("name = ?", partyName).First(&party)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	if !party.DateVotingEnabled {
+	var partyDates []*models.PartyDate
+	tx = r.db.Where("party_name = ?", party.Name).Find(&partyDates)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if !party.DateVotingEnabled && len(partyDates) >= 1 {
 		return nil, fmt.Errorf("cannot add dates to this party, please ask an admin to enable this")
 	}
 	if !party.DateOptionsEnabled && *auth.ForContext(ctx) != party.AdminCode {
@@ -132,7 +142,7 @@ func (r *mutationResolver) AddDate(ctx context.Context, partyName string, date s
 // AddSupply is the resolver for the addSupply field.
 func (r *mutationResolver) AddSupply(ctx context.Context, payload graphqlModel.AddSupplyPayload) (*models.Supply, error) {
 	var party models.Party
-	tx := r.db.First(&party).Where("name = ?", payload.PartyName)
+	tx := r.db.Where("name = ?", payload.PartyName).First(&party)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -160,25 +170,28 @@ func (r *mutationResolver) AddSupply(ctx context.Context, payload graphqlModel.A
 // EditSupply is the resolver for the editSupply field.
 func (r *mutationResolver) EditSupply(ctx context.Context, payload graphqlModel.EditSupplyPayload) (*models.Supply, error) {
 	var supply models.Supply
-	tx := r.db.First(&supply).Where("id = ?", payload.ID)
+	tx := r.db.Where("id = ?", payload.ID).First(&supply)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	supplyUpdate := models.Supply{}
+	supplyUpdate := map[string]interface{}{}
 	if payload.Emoji != nil {
-		supplyUpdate.Emoji = *payload.Emoji
+		supplyUpdate["emoji"] = *payload.Emoji
 	}
 	if payload.IsUrgent != nil {
-		supplyUpdate.IsUrgent = *payload.IsUrgent
+		supplyUpdate["is_urgent"] = *payload.IsUrgent
 	}
 	if payload.Name != nil {
-		supplyUpdate.Name = *payload.Name
+		supplyUpdate["name"] = *payload.Name
+	}
+	if payload.Assignee != nil {
+		supplyUpdate["assignee"] = *payload.Assignee
 	}
 	if payload.Quantity != nil {
 		if *payload.Quantity <= 0 {
 			return nil, fmt.Errorf("supplyUpdate quantity cannot be below zero")
 		}
-		supplyUpdate.Quantity = int32(*payload.Quantity)
+		supplyUpdate["quantity"] = int32(*payload.Quantity)
 	}
 	tx = r.db.Model(&supply).Updates(supplyUpdate)
 	if tx.Error != nil {
@@ -190,7 +203,7 @@ func (r *mutationResolver) EditSupply(ctx context.Context, payload graphqlModel.
 // AssignSupply is the resolver for the assignSupply field.
 func (r *mutationResolver) AssignSupply(ctx context.Context, supplyID int, username string) (*models.Supply, error) {
 	var supply models.Supply
-	tx := r.db.First(&supply).Where("id = ?", supplyID)
+	tx := r.db.Where("id = ?", supplyID).First(&supply)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -206,7 +219,7 @@ func (r *mutationResolver) AssignSupply(ctx context.Context, supplyID int, usern
 // DeleteSupply is the resolver for the deleteSupply field.
 func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*graphqlModel.DeleteSupplyResult, error) {
 	var supply models.Supply
-	tx := r.db.First(&supply).Where("id = ?", supplyID)
+	tx := r.db.Where("id = ?", supplyID).First(&supply)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -222,7 +235,7 @@ func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*gra
 // ToggleDateVote is the resolver for the toggleDateVote field.
 func (r *mutationResolver) ToggleDateVote(ctx context.Context, partyDateID int, username string) (*models.PartyDateVote, error) {
 	var partyDateVote models.PartyDateVote
-	tx := r.db.First(&partyDateVote).Where("username = ?", username)
+	tx := r.db.Where("id = ? AND username = ?", partyDateID, username).First(&partyDateVote)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			partyDateVote = models.PartyDateVote{
@@ -247,7 +260,7 @@ func (r *mutationResolver) ToggleDateVote(ctx context.Context, partyDateID int, 
 // ToggleLocationVote is the resolver for the toggleLocationVote field.
 func (r *mutationResolver) ToggleLocationVote(ctx context.Context, partyLocationID int, username string) (*models.PartyLocationVote, error) {
 	var partyLocationVote models.PartyLocationVote
-	tx := r.db.First(&partyLocationVote).Where("username = ?", username)
+	tx := r.db.Where("id = ? AND username = ?", partyLocationID, username).First(&partyLocationVote)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			partyLocationVote = models.PartyLocationVote{
@@ -319,7 +332,7 @@ func (r *partyResolver) Settings(ctx context.Context, obj *models.Party) (*graph
 // Dates is the resolver for the dates field.
 func (r *partyResolver) Dates(ctx context.Context, obj *models.Party) ([]*models.PartyDate, error) {
 	var dates []*models.PartyDate
-	tx := r.db.Find(&dates).Where("party_name = ?", obj.Name)
+	tx := r.db.Where("party_name = ?", obj.Name).Order("id").Find(&dates)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -329,7 +342,7 @@ func (r *partyResolver) Dates(ctx context.Context, obj *models.Party) ([]*models
 // Locations is the resolver for the locations field.
 func (r *partyResolver) Locations(ctx context.Context, obj *models.Party) ([]*models.PartyLocation, error) {
 	var locations []*models.PartyLocation
-	tx := r.db.Find(&locations).Where("party_name = ?", obj.Name)
+	tx := r.db.Where("party_name = ?", obj.Name).Order("id").Find(&locations)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -361,15 +374,10 @@ func (r *partyDateResolver) ID(ctx context.Context, obj *models.PartyDate) (int,
 	return int(obj.ID), nil
 }
 
-// Date is the resolver for the date field.
-func (r *partyDateResolver) Date(ctx context.Context, obj *models.PartyDate) (string, error) {
-	return obj.Date.String(), nil
-}
-
 // Votes is the resolver for the votes field.
 func (r *partyDateResolver) Votes(ctx context.Context, obj *models.PartyDate) ([]*models.PartyDateVote, error) {
 	var votes []*models.PartyDateVote
-	tx := r.db.Find(&votes).Where("party_date_id = ?", obj.ID)
+	tx := r.db.Where("party_date_id = ?", obj.ID).Find(&votes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -389,7 +397,7 @@ func (r *partyLocationResolver) ID(ctx context.Context, obj *models.PartyLocatio
 // Votes is the resolver for the votes field.
 func (r *partyLocationResolver) Votes(ctx context.Context, obj *models.PartyLocation) ([]*models.PartyLocationVote, error) {
 	var votes []*models.PartyLocationVote
-	tx := r.db.Find(&votes).Where("party_location_id = ?", obj.ID)
+	tx := r.db.Where("party_location_id = ?", obj.ID).Find(&votes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -405,15 +413,17 @@ func (r *partyLocationVoteResolver) ID(ctx context.Context, obj *models.PartyLoc
 func (r *queryResolver) Party(ctx context.Context, name *string, adminCode *string) (*models.Party, error) {
 	var party *models.Party
 	if name != nil {
-		tx := r.db.First(&party, "name = ?", name)
+		tx := r.db.First(&party, "name = ?", *name)
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
 	} else if adminCode != nil {
-		tx := r.db.First(&party, "admin_code = ?", adminCode)
+		tx := r.db.First(&party, "admin_code = ?", *adminCode)
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
+	} else {
+		return nil, fmt.Errorf("must provide either one of name or admin code")
 	}
 	return party, nil
 }
@@ -426,7 +436,7 @@ func (r *songPlaylistResolver) ID(ctx context.Context, obj *models.SongPlaylist)
 // Votes is the resolver for the votes field.
 func (r *songPlaylistResolver) Votes(ctx context.Context, obj *models.SongPlaylist) ([]*models.SongPlaylistVote, error) {
 	var votes []*models.SongPlaylistVote
-	tx := r.db.Find(&votes).Where("song_playlist_id = ?", obj.ID)
+	tx := r.db.Where("song_playlist_id = ?", obj.ID).Find(&votes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

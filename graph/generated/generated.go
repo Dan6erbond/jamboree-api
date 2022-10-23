@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -79,6 +80,8 @@ type ComplexityRoot struct {
 		AssignSupply       func(childComplexity int, supplyID int, username string) int
 		CreateParty        func(childComplexity int, username string) int
 		DeleteSupply       func(childComplexity int, supplyID int) int
+		EditDate           func(childComplexity int, payload model.EditDatePayload) int
+		EditLocation       func(childComplexity int, payload model.EditLocationPayload) int
 		EditParty          func(childComplexity int, partyOptions model.EditPartyRequest) int
 		EditSupply         func(childComplexity int, payload model.EditSupplyPayload) int
 		ToggleDateVote     func(childComplexity int, partyDateID int, username string) int
@@ -86,6 +89,7 @@ type ComplexityRoot struct {
 	}
 
 	Party struct {
+		Creator       func(childComplexity int) int
 		Dates         func(childComplexity int) int
 		Locations     func(childComplexity int) int
 		Name          func(childComplexity int) int
@@ -157,15 +161,19 @@ type MutationResolver interface {
 	DeleteSupply(ctx context.Context, supplyID int) (*model.DeleteSupplyResult, error)
 	ToggleDateVote(ctx context.Context, partyDateID int, username string) (*models.PartyDateVote, error)
 	ToggleLocationVote(ctx context.Context, partyLocationID int, username string) (*models.PartyLocationVote, error)
+	EditDate(ctx context.Context, payload model.EditDatePayload) (*models.PartyDate, error)
+	EditLocation(ctx context.Context, payload model.EditLocationPayload) (*models.PartyLocation, error)
 }
 type PartyResolver interface {
 	Settings(ctx context.Context, obj *models.Party) (*model.PartySettings, error)
 	Dates(ctx context.Context, obj *models.Party) ([]*models.PartyDate, error)
 	Locations(ctx context.Context, obj *models.Party) ([]*models.PartyLocation, error)
+	Supplies(ctx context.Context, obj *models.Party) ([]*models.Supply, error)
+	SongPlaylists(ctx context.Context, obj *models.Party) ([]*models.SongPlaylist, error)
 }
 type PartyDateResolver interface {
 	ID(ctx context.Context, obj *models.PartyDate) (int, error)
-	Date(ctx context.Context, obj *models.PartyDate) (string, error)
+
 	Votes(ctx context.Context, obj *models.PartyDate) ([]*models.PartyDateVote, error)
 }
 type PartyDateVoteResolver interface {
@@ -330,6 +338,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteSupply(childComplexity, args["supplyId"].(int)), true
 
+	case "Mutation.editDate":
+		if e.complexity.Mutation.EditDate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editDate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditDate(childComplexity, args["payload"].(model.EditDatePayload)), true
+
+	case "Mutation.editLocation":
+		if e.complexity.Mutation.EditLocation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editLocation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditLocation(childComplexity, args["payload"].(model.EditLocationPayload)), true
+
 	case "Mutation.editParty":
 		if e.complexity.Mutation.EditParty == nil {
 			break
@@ -377,6 +409,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ToggleLocationVote(childComplexity, args["partyLocationId"].(int), args["username"].(string)), true
+
+	case "Party.creator":
+		if e.complexity.Party.Creator == nil {
+			break
+		}
+
+		return e.complexity.Party.Creator(childComplexity), true
 
 	case "Party.dates":
 		if e.complexity.Party.Dates == nil {
@@ -602,6 +641,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddSupplyPayload,
+		ec.unmarshalInputEditDatePayload,
+		ec.unmarshalInputEditLocationPayload,
 		ec.unmarshalInputEditPartyRequest,
 		ec.unmarshalInputEditSupplyPayload,
 	)
@@ -668,8 +709,11 @@ var sources = []*ast.Source{
 #
 # https://gqlgen.com/getting-started/
 
+scalar Time
+
 type Party {
   name: String!
+  creator: String!
   settings: PartySettings!
   dates: [PartyDate!]!
   locations: [PartyLocation!]!
@@ -694,7 +738,7 @@ type LocationPartySettings {
 
 type PartyDate {
   id: Int!
-  date: String!
+  date: Time!
   votes: [PartyDateVote!]!
 }
 
@@ -766,10 +810,21 @@ input EditSupplyPayload {
   quantity: Int
   isUrgent: Boolean
   emoji: String
+  assignee: String
 }
 
 type DeleteSupplyResult {
   success: Boolean!
+}
+
+input EditDatePayload {
+  id: Int!
+  date: String!
+}
+
+input EditLocationPayload {
+  id: Int!
+  location: String!
 }
 
 type Mutation {
@@ -782,7 +837,12 @@ type Mutation {
   assignSupply(supplyId: Int!, username: String!): Supply!
   deleteSupply(supplyId: Int!): DeleteSupplyResult!
   toggleDateVote(partyDateId: Int!, username: String!): PartyDateVote
-  toggleLocationVote(partyLocationId: Int!, username: String!): PartyLocationVote
+  toggleLocationVote(
+    partyLocationId: Int!
+    username: String!
+  ): PartyLocationVote
+  editDate(payload:EditDatePayload!): PartyDate!
+  editLocation(payload:EditLocationPayload!): PartyLocation!
 }
 `, BuiltIn: false},
 }
@@ -906,6 +966,36 @@ func (ec *executionContext) field_Mutation_deleteSupply_args(ctx context.Context
 		}
 	}
 	args["supplyId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editDate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.EditDatePayload
+	if tmp, ok := rawArgs["payload"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("payload"))
+		arg0, err = ec.unmarshalNEditDatePayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditDatePayload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["payload"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editLocation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.EditLocationPayload
+	if tmp, ok := rawArgs["payload"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("payload"))
+		arg0, err = ec.unmarshalNEditLocationPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditLocationPayload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["payload"] = arg0
 	return args, nil
 }
 
@@ -1474,6 +1564,8 @@ func (ec *executionContext) fieldContext_Mutation_editParty(ctx context.Context,
 			switch field.Name {
 			case "name":
 				return ec.fieldContext_Party_name(ctx, field)
+			case "creator":
+				return ec.fieldContext_Party_creator(ctx, field)
 			case "settings":
 				return ec.fieldContext_Party_settings(ctx, field)
 			case "dates":
@@ -2010,6 +2102,132 @@ func (ec *executionContext) fieldContext_Mutation_toggleLocationVote(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_editDate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_editDate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditDate(rctx, fc.Args["payload"].(model.EditDatePayload))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PartyDate)
+	fc.Result = res
+	return ec.marshalNPartyDate2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐPartyDate(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_editDate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PartyDate_id(ctx, field)
+			case "date":
+				return ec.fieldContext_PartyDate_date(ctx, field)
+			case "votes":
+				return ec.fieldContext_PartyDate_votes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PartyDate", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_editDate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_editLocation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_editLocation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditLocation(rctx, fc.Args["payload"].(model.EditLocationPayload))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PartyLocation)
+	fc.Result = res
+	return ec.marshalNPartyLocation2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐPartyLocation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_editLocation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PartyLocation_id(ctx, field)
+			case "location":
+				return ec.fieldContext_PartyLocation_location(ctx, field)
+			case "votes":
+				return ec.fieldContext_PartyLocation_votes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PartyLocation", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_editLocation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Party_name(ctx context.Context, field graphql.CollectedField, obj *models.Party) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Party_name(ctx, field)
 	if err != nil {
@@ -2042,6 +2260,50 @@ func (ec *executionContext) _Party_name(ctx context.Context, field graphql.Colle
 }
 
 func (ec *executionContext) fieldContext_Party_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Party",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Party_creator(ctx context.Context, field graphql.CollectedField, obj *models.Party) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Party_creator(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Creator, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Party_creator(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Party",
 		Field:      field,
@@ -2222,7 +2484,7 @@ func (ec *executionContext) _Party_supplies(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Supplies, nil
+		return ec.resolvers.Party().Supplies(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2234,17 +2496,17 @@ func (ec *executionContext) _Party_supplies(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.Supply)
+	res := resTmp.([]*models.Supply)
 	fc.Result = res
-	return ec.marshalNSupply2ᚕgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupplyᚄ(ctx, field.Selections, res)
+	return ec.marshalNSupply2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupplyᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Party_supplies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Party",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2280,7 +2542,7 @@ func (ec *executionContext) _Party_songPlaylists(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SongPlaylists, nil
+		return ec.resolvers.Party().SongPlaylists(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2292,17 +2554,17 @@ func (ec *executionContext) _Party_songPlaylists(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.SongPlaylist)
+	res := resTmp.([]*models.SongPlaylist)
 	fc.Result = res
-	return ec.marshalNSongPlaylist2ᚕgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistᚄ(ctx, field.Selections, res)
+	return ec.marshalNSongPlaylist2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Party_songPlaylists(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Party",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2376,7 +2638,7 @@ func (ec *executionContext) _PartyDate_date(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PartyDate().Date(rctx, obj)
+		return obj.Date, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2388,19 +2650,19 @@ func (ec *executionContext) _PartyDate_date(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PartyDate_date(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PartyDate",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2908,6 +3170,8 @@ func (ec *executionContext) fieldContext_Query_party(ctx context.Context, field 
 			switch field.Name {
 			case "name":
 				return ec.fieldContext_Party_name(ctx, field)
+			case "creator":
+				return ec.fieldContext_Party_creator(ctx, field)
 			case "settings":
 				return ec.fieldContext_Party_settings(ctx, field)
 			case "dates":
@@ -5393,6 +5657,78 @@ func (ec *executionContext) unmarshalInputAddSupplyPayload(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEditDatePayload(ctx context.Context, obj interface{}) (model.EditDatePayload, error) {
+	var it model.EditDatePayload
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "date"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "date":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+			it.Date, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputEditLocationPayload(ctx context.Context, obj interface{}) (model.EditLocationPayload, error) {
+	var it model.EditLocationPayload
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "location"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "location":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			it.Location, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputEditPartyRequest(ctx context.Context, obj interface{}) (model.EditPartyRequest, error) {
 	var it model.EditPartyRequest
 	asMap := map[string]interface{}{}
@@ -5460,7 +5796,7 @@ func (ec *executionContext) unmarshalInputEditSupplyPayload(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "quantity", "isUrgent", "emoji"}
+	fieldsInOrder := [...]string{"id", "name", "quantity", "isUrgent", "emoji", "assignee"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5504,6 +5840,14 @@ func (ec *executionContext) unmarshalInputEditSupplyPayload(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emoji"))
 			it.Emoji, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "assignee":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assignee"))
+			it.Assignee, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5757,6 +6101,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_toggleLocationVote(ctx, field)
 			})
 
+		case "editDate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_editDate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "editLocation":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_editLocation(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5781,6 +6143,13 @@ func (ec *executionContext) _Party(ctx context.Context, sel ast.SelectionSet, ob
 		case "name":
 
 			out.Values[i] = ec._Party_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "creator":
+
+			out.Values[i] = ec._Party_creator(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
@@ -5846,19 +6215,45 @@ func (ec *executionContext) _Party(ctx context.Context, sel ast.SelectionSet, ob
 
 			})
 		case "supplies":
+			field := field
 
-			out.Values[i] = ec._Party_supplies(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Party_supplies(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "songPlaylists":
+			field := field
 
-			out.Values[i] = ec._Party_songPlaylists(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Party_songPlaylists(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5901,25 +6296,12 @@ func (ec *executionContext) _PartyDate(ctx context.Context, sel ast.SelectionSet
 
 			})
 		case "date":
-			field := field
 
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PartyDate_date(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._PartyDate_date(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
 			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
 		case "votes":
 			field := field
 
@@ -6777,6 +7159,16 @@ func (ec *executionContext) marshalNDeleteSupplyResult2ᚖgithubᚗcomᚋdan6erb
 	return ec._DeleteSupplyResult(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNEditDatePayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditDatePayload(ctx context.Context, v interface{}) (model.EditDatePayload, error) {
+	res, err := ec.unmarshalInputEditDatePayload(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNEditLocationPayload2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditLocationPayload(ctx context.Context, v interface{}) (model.EditLocationPayload, error) {
+	res, err := ec.unmarshalInputEditLocationPayload(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNEditPartyRequest2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋgraphᚋmodelᚐEditPartyRequest(ctx context.Context, v interface{}) (model.EditPartyRequest, error) {
 	res, err := ec.unmarshalInputEditPartyRequest(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7079,11 +7471,7 @@ func (ec *executionContext) marshalNPartySettings2ᚖgithubᚗcomᚋdan6erbond�
 	return ec._PartySettings(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSongPlaylist2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx context.Context, sel ast.SelectionSet, v models.SongPlaylist) graphql.Marshaler {
-	return ec._SongPlaylist(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNSongPlaylist2ᚕgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistᚄ(ctx context.Context, sel ast.SelectionSet, v []models.SongPlaylist) graphql.Marshaler {
+func (ec *executionContext) marshalNSongPlaylist2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SongPlaylist) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -7107,7 +7495,7 @@ func (ec *executionContext) marshalNSongPlaylist2ᚕgithubᚗcomᚋdan6erbondᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNSongPlaylist2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx, sel, v[i])
+			ret[i] = ec.marshalNSongPlaylist2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -7125,6 +7513,16 @@ func (ec *executionContext) marshalNSongPlaylist2ᚕgithubᚗcomᚋdan6erbondᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNSongPlaylist2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylist(ctx context.Context, sel ast.SelectionSet, v *models.SongPlaylist) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SongPlaylist(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSongPlaylistVote2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSongPlaylistVoteᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SongPlaylistVote) graphql.Marshaler {
@@ -7200,7 +7598,7 @@ func (ec *executionContext) marshalNSupply2githubᚗcomᚋdan6erbondᚋjamboree�
 	return ec._Supply(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSupply2ᚕgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupplyᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Supply) graphql.Marshaler {
+func (ec *executionContext) marshalNSupply2ᚕᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupplyᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Supply) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -7224,7 +7622,7 @@ func (ec *executionContext) marshalNSupply2ᚕgithubᚗcomᚋdan6erbondᚋjambor
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNSupply2githubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupply(ctx, sel, v[i])
+			ret[i] = ec.marshalNSupply2ᚖgithubᚗcomᚋdan6erbondᚋjamboreeᚑapiᚋpkgᚋmodelsᚐSupply(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -7252,6 +7650,27 @@ func (ec *executionContext) marshalNSupply2ᚖgithubᚗcomᚋdan6erbondᚋjambor
 		return graphql.Null
 	}
 	return ec._Supply(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

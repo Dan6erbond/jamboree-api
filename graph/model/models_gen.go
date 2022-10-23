@@ -25,6 +25,16 @@ type DeleteSupplyResult struct {
 	Success bool `json:"success"`
 }
 
+type EditDatePayload struct {
+	ID   int    `json:"id"`
+	Date string `json:"date"`
+}
+
+type EditLocationPayload struct {
+	ID       int    `json:"id"`
+	Location string `json:"location"`
+}
+
 type EditPartyRequest struct {
 	PartyName              string `json:"partyName"`
 	DateOptionsEnabled     *bool  `json:"dateOptionsEnabled"`
@@ -39,6 +49,7 @@ type EditSupplyPayload struct {
 	Quantity *int    `json:"quantity"`
 	IsUrgent *bool   `json:"isUrgent"`
 	Emoji    *string `json:"emoji"`
+	Assignee *string `json:"assignee"`
 }
 
 type LocationPartySettings struct {
