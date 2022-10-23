@@ -233,7 +233,7 @@ func (r *mutationResolver) DeleteSupply(ctx context.Context, supplyID int) (*gra
 // ToggleDateVote is the resolver for the toggleDateVote field.
 func (r *mutationResolver) ToggleDateVote(ctx context.Context, partyDateID int, username string) (*models.PartyDateVote, error) {
 	var partyDateVote models.PartyDateVote
-	tx := r.db.Where("id = ? AND username = ?", partyDateID, username).First(&partyDateVote)
+	tx := r.db.Where("party_date_id = ? AND username = ?", partyDateID, username).First(&partyDateVote)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			partyDateVote = models.PartyDateVote{
