@@ -207,9 +207,7 @@ func (r *mutationResolver) AssignSupply(ctx context.Context, supplyID int, usern
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	supplyUpdate := models.Supply{}
-	supplyUpdate.Assignee = username
-	tx = r.db.Model(&supply).Updates(supplyUpdate)
+	tx = r.db.Model(&supply).Updates(map[string]interface{}{"assignee": username})
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
