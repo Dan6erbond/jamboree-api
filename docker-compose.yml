@@ -5,9 +5,9 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: jamboree
-      POSTGRES_PASSWORD: jamboree
-      POSTGRES_DB: jamboree
+      POSTGRES_USER: ${POSTGRES_USER:-jamboree}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jamboree}
+      POSTGRES_DB: ${POSTGRES_DB:-jamboree}
     volumes:
       - ./.postgres/data:/var/lib/postgresql/data
     networks:
