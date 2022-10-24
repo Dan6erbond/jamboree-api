@@ -32,4 +32,4 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.jamboree.rule=Host(`graphql.jamboree.ravianand.me`)"
       - "traefik.http.routers.jamboree.entrypoints=websecure"
-      - "traefik.http.routers.whoami.tls.certresolver=ravianand"
+      - "traefik.http.routers.jamboree.tls.certresolver=ravianand"
