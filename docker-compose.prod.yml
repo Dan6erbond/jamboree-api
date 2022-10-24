@@ -1,6 +1,9 @@
 version: "3.8"
 
 services:
+  db:
+    networks:
+      - default
   traefik:
     image: "traefik:v2.9"
     container_name: "traefik"
