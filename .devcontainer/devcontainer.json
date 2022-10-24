@@ -24,7 +24,8 @@
 		"golang.Go",
 		"vivaxy.vscode-conventional-commits",
 		"GraphQL.vscode-graphql",
-		"redhat.vscode-yaml"
+		"redhat.vscode-yaml",
+		"GitHub.vscode-pull-request-github"
 	]
     }
   },
