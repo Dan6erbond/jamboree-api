@@ -15,7 +15,7 @@ services:
         aliases:
           - db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB:-jamboree}"]
+      test: ["CMD-SHELL", "pg_isready", "-U", "${POSTGRES_USER:-jamboree}", "-d", "${POSTGRES_DB:-jamboree}"]
       interval: 30s
       timeout: 60s
       retries: 5
