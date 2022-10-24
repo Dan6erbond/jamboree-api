@@ -18,7 +18,7 @@ func NewMux(lc fx.Lifecycle, logger *zap.Logger) *mux.Router {
 	r := mux.NewRouter()
 
 	r.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{"http://localhost:3000", "https://graphql.jamboree.ravianand.me"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "HEAD", "OPTIONS"},
