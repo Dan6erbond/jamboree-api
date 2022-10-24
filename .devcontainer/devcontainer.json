@@ -23,7 +23,8 @@
       "extensions": [
 		"golang.Go",
 		"vivaxy.vscode-conventional-commits",
-		"GraphQL.vscode-graphql"
+		"GraphQL.vscode-graphql",
+		"redhat.vscode-yaml"
 	]
     }
   },

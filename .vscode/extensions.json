@@ -2,6 +2,7 @@
   "recommendations": [
     "vivaxy.vscode-conventional-commits",
     "golang.go",
-    "GraphQL.vscode-graphql"
+    "graphql.vscode-graphql",
+    "redhat.vscode-yaml"
   ]
 }
