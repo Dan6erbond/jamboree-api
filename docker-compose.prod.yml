@@ -33,3 +33,5 @@ services:
       - "traefik.http.routers.jamboree.rule=Host(`graphql.jamboree.ravianand.me`)"
       - "traefik.http.routers.jamboree.entrypoints=websecure"
       - "traefik.http.routers.jamboree.tls.certresolver=ravianand"
+    depends_on:
+      - db
